@@ -1,0 +1,27 @@
+name: Test GCP Workload Identity Federation
+
+on:
+  workflow_dispatch:
+
+permissions:
+  id-token: write # Required for requesting the OIDC JWT
+  contents: read
+
+jobs:
+  wif-auth-test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Authenticate to Google Cloud via WIF
+        uses: google-github-actions/auth@v2
+        with:
+          project_id: 'yuvaraj-internal-project'
+          workload_identity_provider: 'projects/986244541727/locations/global/workloadIdentityPools/pool-github-actions/providers/provider-github'
+          service_account: 'sa-cicd-deployer@yuvaraj-internal-project.iam.gserviceaccount.com'
+
+      - name: Verify Keyless Authentication
+        run: |
+          gcloud auth list
+          gcloud compute networks list
