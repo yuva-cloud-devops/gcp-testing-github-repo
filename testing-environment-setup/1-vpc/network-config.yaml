@@ -1,0 +1,206 @@
+project_id: yuvaraj-internal-project
+region: asia-south1
+
+tags:
+  provisioned_by: terraform
+  environment: dev
+  project: testing-environment
+
+network:
+  vpcs:
+    # ==========================================================================
+    # VPC 1: Platform Foundation VPC (Primary Application & GKE Workloads)
+    # ==========================================================================
+    - network_name: testing-environment-vpc
+      routing_mode: GLOBAL
+      description: "testing-environment VPC Network"
+
+      # Private Service Access (for Cloud SQL, Memorystore, etc.)
+      private_service_access:
+        enabled: true
+        name: testing-environment-psa-range
+        prefix_length: 16
+        export_custom_routes: true
+        import_custom_routes: true
+
+      # Subnet Configuration
+      subnets:
+        - subnet_name: testing-environment-private-subnet-mumbai
+          subnet_ip: 10.20.1.0/24
+          subnet_region: asia-south1
+          subnet_private_access: true
+          secondary_ranges:
+            - range_name: gke-pods-mumbai
+              ip_cidr_range: 10.200.0.0/16
+            - range_name: gke-services-mumbai
+              ip_cidr_range: 10.201.0.0/20
+              
+        - subnet_name: testing-env-proxy-subnet-mumbai
+          subnet_ip: 10.20.2.0/24
+          subnet_region: asia-south1
+          purpose: REGIONAL_MANAGED_PROXY
+          role: ACTIVE
+
+        # - subnet_name: testing-environment-private-subnet-singapore
+        #   subnet_ip: 10.30.1.0/24
+        #   subnet_region: asia-southeast1
+        #   subnet_private_access: true
+         # Dedicated Envoy Proxy-Only Subnet for Regional L7 Load Balancers
+
+
+      # Firewall Rules
+      firewall_rules:
+        ingress:
+          - name: allow-iap-ssh
+            source_ranges:
+              - 35.235.240.0/20
+            target_tags:
+              - allow-iap-ssh
+            ports:
+              - "22"
+
+          - name: allow-health-check
+            source_ranges:
+              - 130.211.0.0/22
+              - 35.191.0.0/16
+            target_tags:
+              - allow-health-check
+            ports:
+              - "3000"
+
+          - name: allow-load-balancer
+            source_ranges:
+              - 130.211.0.0/22
+              - 35.191.0.0/16
+            target_tags:
+              - allow-web
+            ports:
+              - "80"
+              - "443"
+
+          - name: http-server
+            source_ranges:
+              - 0.0.0.0/0
+            target_tags:
+              - http-server
+            ports:
+              - "3000"
+
+        egress:
+          - name: allow-internet
+            destination_ranges:
+              - 0.0.0.0/0
+            ports:
+              - "80"
+              - "443"
+              - "3000"
+
+      # Cloud Routers for VPC 1
+      router:
+        - name: testing-environment-cloud-router-mumbai
+          region: asia-south1
+          bgp:
+            asn: "65001"
+            advertise_mode: DEFAULT
+            keepalive_interval: 20
+
+        # - name: testing-environment-cloud-router-singapore
+        #   region: asia-southeast1
+        #   bgp:
+        #     asn: "65002"
+        #     advertise_mode: CUSTOM
+        #     advertised_groups:
+        #       - ALL_SUBNETS
+        #     advertised_ip_ranges:
+        #       - range: 10.30.1.0/24
+        #         description: "Singapore Primary Subnet"
+
+      # Cloud NATs for VPC 1
+      nat:
+        - name: testing-environment-cloud-nat-mumbai
+          region: asia-south1
+          router_name: testing-environment-cloud-router-mumbai
+
+        # - name: testing-environment-cloud-nat-singapore
+        #   region: asia-southeast1
+        #   router_name: testing-environment-cloud-router-singapore
+
+    # # ==========================================================================
+    # # VPC 2: Management & Security VPC (Bastion, DevOps & Observability)
+    # # ==========================================================================
+    # - network_name: management-security-vpc
+    #   routing_mode: REGIONAL
+    #   description: "Management, Bastion & Shared Security Tools VPC"
+
+    #   # Private Service Access
+    #   private_service_access:
+    #     enabled: true
+    #     name: management-security-psa-range
+    #     prefix_length: 20
+
+    #   # Subnet Configuration
+    #   subnets:
+    #     - subnet_name: mgmt-subnet-mumbai
+    #       subnet_ip: 10.50.1.0/24
+    #       subnet_region: asia-south1
+    #       subnet_private_access: true
+
+    #     - subnet_name: mgmt-subnet-singapore
+    #       subnet_ip: 10.60.1.0/24
+    #       subnet_region: asia-southeast1
+    #       subnet_private_access: true
+
+    #   # Firewall Rules
+    #   firewall_rules:
+    #     ingress:
+    #       - name: mgmt-allow-iap-ssh
+    #         source_ranges:
+    #           - 35.235.240.0/20
+    #         target_tags:
+    #           - mgmt-bastion
+    #         ports:
+    #           - "22"
+
+    #       - name: mgmt-allow-monitoring
+    #         source_ranges:
+    #           - 10.50.1.0/24
+    #           - 10.60.1.0/24
+    #         target_tags:
+    #           - monitoring
+    #         ports:
+    #           - "9090"
+    #           - "3000"
+
+    #     egress:
+    #       - name: mgmt-allow-internet
+    #         destination_ranges:
+    #           - 0.0.0.0/0
+    #         ports:
+    #           - "80"
+    #           - "443"
+
+    #   # Cloud Routers for VPC 2
+    #   router:
+    #     - name: mgmt-router-mumbai
+    #       region: asia-south1
+    #       bgp:
+    #         asn: "65011"
+    #         advertise_mode: DEFAULT
+    #         keepalive_interval: 20
+
+    #     - name: mgmt-router-singapore
+    #       region: asia-southeast1
+    #       bgp:
+    #         asn: "65012"
+    #         advertise_mode: DEFAULT
+    #         keepalive_interval: 20
+
+    #   # Cloud NATs for VPC 2
+    #   nat:
+    #     - name: mgmt-nat-mumbai
+    #       region: asia-south1
+    #       router_name: mgmt-router-mumbai
+
+    #     - name: mgmt-nat-singapore
+    #       region: asia-southeast1
+    #       router_name: mgmt-router-singapore
