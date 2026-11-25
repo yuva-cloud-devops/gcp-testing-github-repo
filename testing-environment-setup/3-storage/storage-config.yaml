@@ -1,0 +1,28 @@
+# ==============================================================================
+# Cloud Storage (GCS) Buckets Configuration
+# Dedicated bucket for Cloud Functions (2nd Gen) source code archives & assets
+# ==============================================================================
+
+storage_infrastructure:
+  project_id: "yuvaraj-internal-project"
+  region: "asia-south1"
+
+  tags:
+    environment: "dev"
+    managed-by: "terraform"
+    purpose: "serverless-source"
+
+  gcs:
+    buckets:
+      yuvaraj-internal-serverless-sources-mumbai:
+        location: "asia-south1"
+        storage_class: "STANDARD"
+        uniform_bucket_level_access: true
+        public_access_prevention: "enforced"
+        versioning: true
+        force_destroy: true
+        lifecycle_rules:
+          - action:
+              type: "Delete"
+            condition:
+              age: 30

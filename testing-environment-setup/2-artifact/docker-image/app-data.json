@@ -1,0 +1,10 @@
+{
+  "status": "online",
+  "service": "gcp-devops-microservice",
+  "version": "v1.0.0",
+  "engine": "Nginx on Google Cloud Serverless",
+  "region": "asia-south1 (Mumbai)",
+  "cloud_provider": "Google Cloud Platform",
+  "network_mode": "Direct VPC Egress Ready",
+  "message": "Hello from custom container running on Google Cloud Serverless Platform!"
+}

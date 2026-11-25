@@ -1,0 +1,27 @@
+# ==============================================================================
+# Artifact Registry Repositories Configuration
+# ==============================================================================
+
+container_infrastructure:
+  project_id: "yuvaraj-internal-project"
+  region: "asia-south1"
+
+  tags:
+    environment: "dev"
+    managed-by: "terraform"
+    tier: "artifact-registry"
+
+  # ============================================================================
+  # 1. Google Artifact Registry (GAR) Repositories
+  # ============================================================================
+  artifact_registries:
+    app-docker-repo:
+      description: "Docker repository for serverless microservices and container images"
+      format: "DOCKER"
+      immutable_tags: false
+      vulnerability_scanning: false
+      cleanup_policies:
+        keep_recent_versions:
+          action: "KEEP"
+          most_recent_versions:
+            keep_count: 5
